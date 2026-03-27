@@ -7,7 +7,7 @@ import MobileSectionTitle from '../../components/MobileSectionTitle'
 import { useTransactions } from '../../hooks/useTransactions'
 
 function getFamilyId(): string {
-  return localStorage.getItem('family_id') || (import.meta.env.VITE_DEFAULT_FAMILY_ID as string) || ''
+  return localStorage.getItem('family_id') || ''
 }
 
 function getMonthOptions() {

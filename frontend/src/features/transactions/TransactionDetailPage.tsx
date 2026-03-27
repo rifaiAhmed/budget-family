@@ -55,6 +55,19 @@ export default function TransactionDetailPage() {
               </Typography>
               <Typography sx={{ fontWeight: 800 }}>{positive ? 'Income' : 'Expense'}</Typography>
             </div>
+            {tx.created_by_name || tx.created_by_email ? (
+              <div>
+                <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                  Dipakai oleh
+                </Typography>
+                <Typography sx={{ fontWeight: 800 }}>{tx.created_by_name || tx.created_by_email}</Typography>
+                {tx.created_by_name && tx.created_by_email ? (
+                  <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                    {tx.created_by_email}
+                  </Typography>
+                ) : null}
+              </div>
+            ) : null}
             <div>
               <Typography variant="body2" sx={{ opacity: 0.7 }}>
                 Date

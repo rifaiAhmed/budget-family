@@ -7,3 +7,11 @@ export function useFamilies() {
     queryFn: familyApi.listFamilies
   })
 }
+
+export function useFamilyMembers(familyId: string) {
+  return useQuery({
+    queryKey: ['family-members', familyId],
+    queryFn: () => familyApi.listFamilyMembers(familyId),
+    enabled: !!familyId
+  })
+}

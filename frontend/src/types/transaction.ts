@@ -8,5 +8,7 @@ export type Transaction = {
   note?: string
   transaction_date: string
   created_by: string
+  created_by_name?: string
+  created_by_email?: string
   created_at: string
 }

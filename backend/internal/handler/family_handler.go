@@ -30,6 +30,10 @@ type inviteFamilyRequest struct {
 	Email    string    `json:"email" validate:"required,email"`
 }
 
+type joinFamilyRequest struct {
+	FamilyID uuid.UUID `json:"family_id" validate:"required"`
+}
+
 func (h *FamilyHandler) Create(c *gin.Context) {
 	uid, ok := getUserID(c)
 	if !ok {
@@ -86,4 +90,45 @@ func (h *FamilyHandler) Invite(c *gin.Context) {
 	}
 
 	utils.Success(c, http.StatusCreated, "success", gin.H{"invitation": inv})
+}
+
+func (h *FamilyHandler) Join(c *gin.Context) {
+	uid, ok := getUserID(c)
+	if !ok {
+		utils.Fail(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req joinFamilyRequest
+	if !h.bindAndValidateJSON(c, &req) {
+		return
+	}
+
+	family, err := h.svc.Join(c.Request.Context(), uid, req.FamilyID)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+
+	utils.Success(c, http.StatusOK, "success", gin.H{"family": family})
+}
+
+func (h *FamilyHandler) Members(c *gin.Context) {
+	uid, ok := getUserID(c)
+	if !ok {
+		utils.Fail(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	familyID, ok := parseUUIDParam(c, "id")
+	if !ok {
+		return
+	}
+
+	rows, err := h.svc.Members(c.Request.Context(), uid, familyID)
+	if err != nil {
+		h.handleError(c, err)
+		return
+	}
+	utils.Success(c, http.StatusOK, "success", gin.H{"items": rows})
 }

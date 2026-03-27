@@ -8,7 +8,7 @@ import { useCreateWallet, useDeleteWallet, useUpdateWallet, useWallets } from '.
 import { useSnackbar } from '../../components/SnackbarProvider'
 
 function getFamilyId(): string {
-  return localStorage.getItem('family_id') || (import.meta.env.VITE_DEFAULT_FAMILY_ID as string) || ''
+  return localStorage.getItem('family_id') || ''
 }
 
 export default function WalletPage() {

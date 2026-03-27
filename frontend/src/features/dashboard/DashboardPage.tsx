@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCategories } from '../../hooks/useCategories'
 
 function getFamilyId(): string {
-  return localStorage.getItem('family_id') || (import.meta.env.VITE_DEFAULT_FAMILY_ID as string) || ''
+  return localStorage.getItem('family_id') || ''
 }
 
 function monthRange() {
@@ -86,7 +86,12 @@ export default function DashboardPage() {
           ) : usageQ.data?.items?.length ? (
             <Stack spacing={1.5}>
               {usageQ.data.items.slice(0, 3).map((row) => (
-                <BudgetProgress key={row.category_id} row={row} categoryName={categoryById.get(row.category_id)} />
+                <BudgetProgress
+                  key={row.category_id}
+                  row={row}
+                  categoryName={categoryById.get(row.category_id)}
+                  onClick={() => nav(`/budget/${row.category_id}?month=${range.month}&year=${range.year}`)}
+                />
               ))}
             </Stack>
           ) : (

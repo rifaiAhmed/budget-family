@@ -18,7 +18,9 @@ import (
 type FamilyService interface {
 	Create(ctx context.Context, ownerID uuid.UUID, name string) (*entity.Family, error)
 	List(ctx context.Context, userID uuid.UUID) ([]entity.Family, error)
+	Join(ctx context.Context, userID, familyID uuid.UUID) (*entity.Family, error)
 	Invite(ctx context.Context, requesterID uuid.UUID, familyID uuid.UUID, email string) (*entity.Invitation, error)
+	Members(ctx context.Context, requesterID, familyID uuid.UUID) ([]repository.FamilyMemberRow, error)
 }
 
 type familyService struct {
@@ -49,6 +51,33 @@ func (s *familyService) List(ctx context.Context, userID uuid.UUID) ([]entity.Fa
 	return families, nil
 }
 
+func (s *familyService) Join(ctx context.Context, userID, familyID uuid.UUID) (*entity.Family, error) {
+	f, err := s.families.GetByID(ctx, familyID)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "record not found") {
+			return nil, utils.NewNotFound("family not found", err)
+		}
+		return nil, utils.NewInternal("failed to get family", err)
+	}
+
+	isMember, err := s.families.IsMember(ctx, familyID, userID)
+	if err != nil {
+		return nil, utils.NewInternal("failed to verify membership", err)
+	}
+	if isMember {
+		return f, nil
+	}
+
+	m := &entity.FamilyMember{ID: uuid.New(), FamilyID: familyID, UserID: userID, Role: "member"}
+	if err := s.families.AddMember(ctx, m); err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate") {
+			return f, nil
+		}
+		return nil, utils.NewInternal("failed to join family", err)
+	}
+	return f, nil
+}
+
 func (s *familyService) Invite(ctx context.Context, requesterID uuid.UUID, familyID uuid.UUID, email string) (*entity.Invitation, error) {
 	isMember, err := s.families.IsMember(ctx, familyID, requesterID)
 	if err != nil {
@@ -77,4 +106,20 @@ func (s *familyService) Invite(ctx context.Context, requesterID uuid.UUID, famil
 		return nil, utils.NewInternal("failed to create invitation", err)
 	}
 	return inv, nil
+}
+
+func (s *familyService) Members(ctx context.Context, requesterID, familyID uuid.UUID) ([]repository.FamilyMemberRow, error) {
+	isMember, err := s.families.IsMember(ctx, familyID, requesterID)
+	if err != nil {
+		return nil, utils.NewInternal("failed to verify membership", err)
+	}
+	if !isMember {
+		return nil, utils.NewForbidden("not a family member", nil)
+	}
+
+	rows, err := s.families.ListMembers(ctx, familyID)
+	if err != nil {
+		return nil, utils.NewInternal("failed to list members", err)
+	}
+	return rows, nil
 }

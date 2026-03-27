@@ -61,6 +61,24 @@ func (s *transactionService) Create(ctx context.Context, in TransactionCreateInp
 		return nil, utils.NewBadRequest("amount must be greater than 0", nil)
 	}
 
+	if in.Type == "expense" {
+		budgetSvc := NewBudgetService(s.cfg, s.logger, s.budgetRepo, s.txRepo)
+		_, remaining, err := budgetSvc.Remaining(ctx, in.FamilyID, in.CategoryID, int(in.TransactionDate.Month()), in.TransactionDate.Year(), time.Now().UTC())
+		if err != nil {
+			return nil, err
+		}
+		if remaining.GreaterThan(decimal.Zero) && remaining.LessThan(in.Amount) {
+			return nil, utils.NewBadRequest("budget is not enough", nil)
+		}
+		if remaining.LessThanOrEqual(decimal.Zero) {
+			// If there is an active budget and it's already 0 or less, block.
+			budgetAmount, _, _ := budgetSvc.Remaining(ctx, in.FamilyID, in.CategoryID, int(in.TransactionDate.Month()), in.TransactionDate.Year(), time.Now().UTC())
+			if budgetAmount.GreaterThan(decimal.Zero) {
+				return nil, utils.NewBadRequest("budget is exhausted", nil)
+			}
+		}
+	}
+
 	t := &entity.Transaction{
 		ID:              uuid.New(),
 		FamilyID:        in.FamilyID,

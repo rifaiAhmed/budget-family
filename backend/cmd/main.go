@@ -103,7 +103,9 @@ func main() {
 	{
 		api.POST("/families", familyH.Create)
 		api.GET("/families", familyH.List)
+		api.POST("/families/join", familyH.Join)
 		api.POST("/families/invite", familyH.Invite)
+		api.GET("/families/:id/members", familyH.Members)
 
 		api.GET("/wallets", walletH.List)
 		api.POST("/wallets", walletH.Create)

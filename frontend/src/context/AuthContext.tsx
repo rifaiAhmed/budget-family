@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import * as authApi from '../api/authApi'
-import * as familyApi from '../api/familyApi'
 import type { User } from '../types/user'
 
 type AuthContextValue = {
@@ -31,16 +30,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         const me = await authApi.me()
         setUser(me)
-
-        if (!localStorage.getItem('family_id')) {
-          try {
-            const fams = await familyApi.listFamilies()
-            const first = fams.items?.[0]
-            if (first?.id) localStorage.setItem('family_id', first.id)
-          } catch {
-            // ignore
-          }
-        }
       } catch {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
@@ -57,16 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('access_token', res.tokens.access_token)
     localStorage.setItem('refresh_token', res.tokens.refresh_token)
     setUser(res.user)
-
-    if (!localStorage.getItem('family_id')) {
-      try {
-        const fams = await familyApi.listFamilies()
-        const first = fams.items?.[0]
-        if (first?.id) localStorage.setItem('family_id', first.id)
-      } catch {
-        // ignore
-      }
-    }
     await qc.invalidateQueries()
   }
 
@@ -75,16 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('access_token', res.tokens.access_token)
     localStorage.setItem('refresh_token', res.tokens.refresh_token)
     setUser(res.user)
-
-    if (!localStorage.getItem('family_id')) {
-      try {
-        const fams = await familyApi.listFamilies()
-        const first = fams.items?.[0]
-        if (first?.id) localStorage.setItem('family_id', first.id)
-      } catch {
-        // ignore
-      }
-    }
     await qc.invalidateQueries()
   }
 

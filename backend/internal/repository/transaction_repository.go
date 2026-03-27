@@ -34,7 +34,9 @@ type TransactionRepository interface {
 
 type transactionRepository struct{ db *gorm.DB }
 
-func NewTransactionRepository(db *gorm.DB) TransactionRepository { return &transactionRepository{db: db} }
+func NewTransactionRepository(db *gorm.DB) TransactionRepository {
+	return &transactionRepository{db: db}
+}
 
 func (r *transactionRepository) Create(ctx context.Context, tx *gorm.DB, t *entity.Transaction) error {
 	return tx.WithContext(ctx).Create(t).Error
@@ -42,7 +44,12 @@ func (r *transactionRepository) Create(ctx context.Context, tx *gorm.DB, t *enti
 
 func (r *transactionRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.Transaction, error) {
 	var t entity.Transaction
-	if err := r.db.WithContext(ctx).First(&t, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Table("transactions t").
+		Select("t.*, u.name as created_by_name, u.email as created_by_email").
+		Joins("JOIN users u ON u.id = t.created_by").
+		Where("t.id = ?", id).
+		Scan(&t).Error; err != nil {
 		return nil, err
 	}
 	return &t, nil

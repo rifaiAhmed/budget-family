@@ -2,11 +2,19 @@ import { Card, CardContent, LinearProgress, Stack, Typography } from '@mui/mater
 import type { BudgetUsage } from '../types/budget'
 import { formatMoneyIDR } from '../components/Money'
 
-export default function BudgetProgress({ row, categoryName }: { row: BudgetUsage; categoryName?: string }) {
+export default function BudgetProgress({
+  row,
+  categoryName,
+  onClick
+}: {
+  row: BudgetUsage
+  categoryName?: string
+  onClick?: () => void
+}) {
   const pct = Number(row.percentage_used)
 
   return (
-    <Card variant="outlined">
+    <Card variant="outlined" onClick={onClick} sx={onClick ? { cursor: 'pointer' } : undefined}>
       <CardContent>
         <Stack spacing={1}>
           <Stack direction="row" justifyContent="space-between">

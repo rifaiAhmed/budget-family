@@ -29,13 +29,14 @@ type BudgetService interface {
 	Upsert(ctx context.Context, familyID, categoryID uuid.UUID, amount decimal.Decimal, month, year int) (*entity.Budget, error)
 	List(ctx context.Context, familyID uuid.UUID, month, year, page, limit int) ([]entity.Budget, utils.PageMeta, error)
 	Usage(ctx context.Context, familyID uuid.UUID, month, year int) ([]BudgetUsageRow, error)
+	Remaining(ctx context.Context, familyID, categoryID uuid.UUID, month, year int, now time.Time) (decimal.Decimal, decimal.Decimal, error)
 }
 
 type budgetService struct {
-	cfg      config.Config
-	logger   *zap.Logger
-	budgets  repository.BudgetRepository
-	txRepo   repository.TransactionRepository
+	cfg     config.Config
+	logger  *zap.Logger
+	budgets repository.BudgetRepository
+	txRepo  repository.TransactionRepository
 }
 
 func NewBudgetService(cfg config.Config, logger *zap.Logger, budgets repository.BudgetRepository, txRepo repository.TransactionRepository) BudgetService {
@@ -77,7 +78,6 @@ func (s *budgetService) Usage(ctx context.Context, familyID uuid.UUID, month, ye
 		return nil, utils.NewBadRequest("invalid year", nil)
 	}
 
-	// Fetch budgets for the requested period
 	budgets, _, err := s.budgets.ListByFamily(ctx, familyID, month, year, 1000, 0)
 	if err != nil {
 		return nil, utils.NewInternal("failed to list budgets", err)
@@ -107,6 +107,29 @@ func (s *budgetService) Usage(ctx context.Context, familyID uuid.UUID, month, ye
 		})
 	}
 
-	_ = time.Now
 	return rows, nil
+}
+
+func (s *budgetService) Remaining(ctx context.Context, familyID, categoryID uuid.UUID, month, year int, now time.Time) (decimal.Decimal, decimal.Decimal, error) {
+	budgets, _, err := s.budgets.ListByFamily(ctx, familyID, month, year, 1000, 0)
+	if err != nil {
+		return decimal.Zero, decimal.Zero, utils.NewInternal("failed to list budgets", err)
+	}
+
+	var amount decimal.Decimal
+	for _, b := range budgets {
+		if b.CategoryID == categoryID {
+			amount = b.Amount
+			break
+		}
+	}
+	if amount.Equal(decimal.Zero) {
+		return decimal.Zero, decimal.Zero, nil
+	}
+
+	used, err := s.txRepo.SumByCategoryInMonth(ctx, familyID, categoryID, month, year)
+	if err != nil {
+		return decimal.Zero, decimal.Zero, utils.NewInternal("failed to calculate budget usage", err)
+	}
+	return amount, amount.Sub(used), nil
 }

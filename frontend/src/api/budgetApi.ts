@@ -12,7 +12,13 @@ export async function budgetUsage(params: { family_id: string; month: number; ye
   return data.data
 }
 
-export async function upsertBudget(payload: { family_id: string; category_id: string; amount: string; month: number; year: number }) {
+export async function upsertBudget(payload: {
+  family_id: string
+  category_id: string
+  amount: string
+  month: number
+  year: number
+}) {
   const token = localStorage.getItem('access_token')
   const { data } = await api.post<ApiResponse<{ budget: Budget }>>(
     '/budgets',

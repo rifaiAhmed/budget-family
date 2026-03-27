@@ -9,6 +9,7 @@ import TransactionListPage from '../features/transactions/TransactionListPage'
 import AddTransactionPage from '../features/transactions/AddTransactionPage'
 import TransactionDetailPage from '../features/transactions/TransactionDetailPage'
 import BudgetPage from '../features/budget/BudgetPage'
+import BudgetDetailPage from '../features/budget/BudgetDetailPage'
 import WalletPage from '../features/wallet/WalletPage'
 import SettingsPage from '../features/settings/SettingsPage'
 
@@ -39,6 +40,7 @@ export default function AppRouter() {
         <Route path="transactions/:id" element={<TransactionDetailPage />} />
         <Route path="add" element={<AddTransactionPage />} />
         <Route path="budget" element={<BudgetPage />} />
+        <Route path="budget/:categoryId" element={<BudgetDetailPage />} />
         <Route path="wallets" element={<WalletPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

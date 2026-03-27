@@ -14,7 +14,7 @@ export default function MobileLayout() {
       <Box sx={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
         {!hide && <Header />}
 
-        <Box sx={{ flex: 1, p: 2, pb: hide ? 2 : 12 }}>
+        <Box sx={{ flex: 1, p: 2, pb: hide ? 2 : 13 }}>
           <Outlet />
         </Box>
 

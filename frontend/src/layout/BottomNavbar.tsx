@@ -37,7 +37,8 @@ export default function BottomNavbar() {
         maxWidth: 480,
         borderTopLeftRadius: 18,
         borderTopRightRadius: 18,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        zIndex: 1400
       }}
     >
       <BottomNavigation

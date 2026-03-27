@@ -1,5 +1,5 @@
 import { Box, Button, Card, CardContent, MenuItem, Skeleton, Stack, TextField, Typography } from '@mui/material'
-import { Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useMemo, useState } from 'react'
 import PullToRefresh from '../../components/PullToRefresh'
 import EmptyState from '../../components/EmptyState'
@@ -8,14 +8,16 @@ import BudgetProgress from '../../ui/BudgetProgress'
 import { useBudgetUsage, useUpsertBudget } from '../../hooks/useBudgets'
 import { useCategories } from '../../hooks/useCategories'
 import { useSnackbar } from '../../components/SnackbarProvider'
+import { useNavigate } from 'react-router-dom'
 
 function getFamilyId(): string {
-  return localStorage.getItem('family_id') || (import.meta.env.VITE_DEFAULT_FAMILY_ID as string) || ''
+  return localStorage.getItem('family_id') || ''
 }
 
 export default function BudgetPage() {
   const familyId = getFamilyId()
   const { notify } = useSnackbar()
+  const nav = useNavigate()
   const now = new Date()
   const [month, setMonth] = useState<number>(now.getMonth() + 1)
   const [year, setYear] = useState<number>(now.getFullYear())
@@ -36,6 +38,17 @@ export default function BudgetPage() {
   const pieData = useMemo(() => {
     const items = q.data?.items ?? []
     return items.map((r, idx) => ({ name: categoryById.get(r.category_id) || `Category ${idx + 1}`, value: Number(r.used_amount) || 0 }))
+  }, [q.data?.items])
+
+  const pieColors = useMemo(() => {
+    const palette = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ef4444', '#14b8a6', '#eab308', '#0ea5e9', '#ec4899']
+    const items = q.data?.items ?? []
+    return items.map((r, idx) => {
+      const s = r.category_id || String(idx)
+      let h = 0
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+      return palette[h % palette.length]
+    })
   }, [q.data?.items])
 
   const onRefresh = async () => {
@@ -78,7 +91,11 @@ export default function BudgetPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Tooltip />
-                      <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={52} outerRadius={80} fill="#3b82f6" />
+                      <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={52} outerRadius={80}>
+                        {pieData.map((_, idx) => (
+                          <Cell key={idx} fill={pieColors[idx] || '#3b82f6'} />
+                        ))}
+                      </Pie>
                     </PieChart>
                   </ResponsiveContainer>
                 )}
@@ -113,15 +130,27 @@ export default function BudgetPage() {
                 </TextField>
               )}
 
-              <TextField label="Budget amount" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
+              <TextField
+                label="Budget amount"
+                inputMode="numeric"
+                value={amount}
+                onChange={(e) => setAmount((e.target.value || '').replace(/\D/g, ''))}
+              />
 
               <Button
                 variant="contained"
                 disabled={!categoryId || !amount || upsertM.isPending}
                 onClick={async () => {
                   try {
-                    await upsertM.mutateAsync({ family_id: familyId, category_id: categoryId, amount, month, year })
+                    await upsertM.mutateAsync({
+                      family_id: familyId,
+                      category_id: categoryId,
+                      amount,
+                      month,
+                      year
+                    })
                     setAmount('')
+                    setCategoryId('')
                     notify('Budget saved', 'success')
                     await q.refetch()
                   } catch (e: any) {
@@ -145,7 +174,12 @@ export default function BudgetPage() {
         ) : q.data?.items?.length ? (
           <Stack spacing={1.5}>
             {q.data.items.map((row) => (
-              <BudgetProgress key={row.category_id} row={row} categoryName={categoryById.get(row.category_id)} />
+              <BudgetProgress
+                key={row.category_id}
+                row={row}
+                categoryName={categoryById.get(row.category_id)}
+                onClick={() => nav(`/budget/${row.category_id}?month=${month}&year=${year}`)}
+              />
             ))}
           </Stack>
         ) : (

@@ -11,8 +11,20 @@ import (
 
 type FamilyRepository interface {
 	CreateFamily(ctx context.Context, family *entity.Family, ownerMember *entity.FamilyMember) error
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.Family, error)
 	ListFamiliesByUser(ctx context.Context, userID uuid.UUID) ([]entity.Family, error)
 	IsMember(ctx context.Context, familyID, userID uuid.UUID) (bool, error)
+	AddMember(ctx context.Context, m *entity.FamilyMember) error
+	ListMembers(ctx context.Context, familyID uuid.UUID) ([]FamilyMemberRow, error)
+}
+
+type FamilyMemberRow struct {
+	ID       uuid.UUID `json:"id"`
+	FamilyID uuid.UUID `json:"family_id"`
+	UserID   uuid.UUID `json:"user_id"`
+	Role     string    `json:"role"`
+	Name     string    `json:"name"`
+	Email    string    `json:"email"`
 }
 
 type familyRepository struct {
@@ -33,6 +45,14 @@ func (r *familyRepository) CreateFamily(ctx context.Context, family *entity.Fami
 		}
 		return nil
 	})
+}
+
+func (r *familyRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.Family, error) {
+	var f entity.Family
+	if err := r.db.WithContext(ctx).First(&f, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &f, nil
 }
 
 func (r *familyRepository) ListFamiliesByUser(ctx context.Context, userID uuid.UUID) ([]entity.Family, error) {
@@ -57,4 +77,22 @@ func (r *familyRepository) IsMember(ctx context.Context, familyID, userID uuid.U
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func (r *familyRepository) AddMember(ctx context.Context, m *entity.FamilyMember) error {
+	return r.db.WithContext(ctx).Create(m).Error
+}
+
+func (r *familyRepository) ListMembers(ctx context.Context, familyID uuid.UUID) ([]FamilyMemberRow, error) {
+	var rows []FamilyMemberRow
+	if err := r.db.WithContext(ctx).
+		Table("family_members fm").
+		Select("fm.id, fm.family_id, fm.user_id, fm.role, u.name, u.email").
+		Joins("JOIN users u ON u.id = fm.user_id").
+		Where("fm.family_id = ?", familyID).
+		Order("CASE WHEN fm.role = 'owner' THEN 0 ELSE 1 END, u.name ASC").
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
 }

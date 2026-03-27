@@ -10,6 +10,7 @@ import { useWallets } from '../../hooks/useWallets'
 import { useCategories } from '../../hooks/useCategories'
 import { useSnackbar } from '../../components/SnackbarProvider'
 import EmptyState from '../../components/EmptyState'
+import { formatMoneyIDR } from '../../components/Money'
 
 function getFamilyId(): string {
   return localStorage.getItem('family_id') || (import.meta.env.VITE_DEFAULT_FAMILY_ID as string) || ''
@@ -39,6 +40,8 @@ export default function AddTransactionPage() {
   )
 
   const categoriesQ = useCategories({ family_id: familyId, type, page: 1, limit: 200 })
+
+  const [amountView, setAmountView] = useState<string>('')
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), [])
 
@@ -84,6 +87,8 @@ export default function AddTransactionPage() {
 		amount: '',
 		note: ''
 	  } as any)
+
+	  setAmountView('')
 	  nav(`/transactions/${created.id}`)
     } catch (e: any) {
       notify(e?.response?.data?.message || 'Failed to save', 'error')
@@ -91,6 +96,8 @@ export default function AddTransactionPage() {
   }
 
   const loading = walletsQ.isLoading || categoriesQ.isLoading
+
+  const amountReg = register('amount')
 
   return (
     <Stack spacing={2}>
@@ -140,7 +147,26 @@ export default function AddTransactionPage() {
         </TextField>
       )}
 
-      <TextField label="Amount" inputMode="decimal" {...register('amount')} error={!!errors.amount} helperText={errors.amount?.message} />
+      <TextField
+        label="Amount"
+        inputMode="numeric"
+        name={amountReg.name}
+        inputRef={amountReg.ref}
+        onBlur={amountReg.onBlur}
+        value={amountView}
+        onChange={(e) => {
+          const digits = (e.target.value || '').replace(/\D/g, '')
+          setValue('amount', digits)
+          setAmountView(digits ? formatMoneyIDR(Number(digits)) : '')
+        }}
+        onKeyDown={(e) => {
+          const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End']
+          if (allowed.includes(e.key)) return
+          if (!/\d/.test(e.key)) e.preventDefault()
+        }}
+        error={!!errors.amount}
+        helperText={errors.amount?.message}
+      />
       <TextField
         label="Date"
         type="date"
