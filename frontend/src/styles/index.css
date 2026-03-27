@@ -1,0 +1,30 @@
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0b0f19;
+}
+
+#root {
+  min-height: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+}
+
+.mobile-container {
+  width: 100%;
+  max-width: 480px;
+  min-height: calc(100vh - 24px);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0b0f19;
+  }
+}
